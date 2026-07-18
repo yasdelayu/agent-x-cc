@@ -4,18 +4,21 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
 import { LedgerImpl } from "../ledger/index.js";
 import { MarketplaceImpl } from "../marketplace/index.js";
-import { CheckoutService } from "./checkout.js";
+import { X402Checkout } from "./x402.js";
 
 /**
- * Zero-dependency web server for AgentX: a working landing page plus a small
- * JSON API over the live X402 ledger and the test-mode payment gateway.
+ * Web server for AgentX: a landing page plus a small JSON API over the live
+ * X402 ledger. Credits are bought with **real USDC on Base over the x402
+ * protocol** — no cards, no Stripe. Settlement is delegated to an x402
+ * facilitator; the server holds no private key (see ./x402.ts).
  *
- *   GET  /                     landing page
- *   GET  /api/packs            credit packs on sale
- *   GET  /api/balance?account= X402 balance for an account
- *   GET  /api/skills           marketplace skills
- *   GET  /api/orders           recent test orders
- *   POST /api/checkout         { account, packId, card } → mint credits on success
+ *   GET  /                       landing page
+ *   GET  /api/packs              credit packs on sale (USD + USDC)
+ *   GET  /api/x402/config        network, payTo, facilitator in use
+ *   GET  /api/balance?account=   X402 balance for an account
+ *   GET  /api/skills             marketplace skills
+ *   GET  /api/settlements        recent on-chain USDC settlements
+ *   *    /api/x402/buy/:packId   x402 flow: 402 challenge → pay USDC → mint
  */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,17 +41,6 @@ function json(res: ServerResponse, status: number, body: unknown): void {
     "cache-control": "no-store",
   });
   res.end(payload);
-}
-
-async function readBody(req: IncomingMessage): Promise<string> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of req) {
-    size += chunk.length;
-    if (size > 1_000_000) throw new Error("body too large");
-    chunks.push(chunk as Buffer);
-  }
-  return Buffer.concat(chunks).toString("utf8");
 }
 
 async function serveStatic(res: ServerResponse, urlPath: string): Promise<void> {
@@ -78,7 +70,7 @@ export interface ServeOptions {
 export function createApp() {
   const ledger = new LedgerImpl();
   const marketplace = new MarketplaceImpl(ledger);
-  const checkout = new CheckoutService(ledger);
+  const x402 = new X402Checkout(ledger);
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const url = new URL(req.url || "/", "http://localhost");
@@ -87,11 +79,31 @@ export function createApp() {
 
     try {
       if (path === "/api/health") {
-        return json(res, 200, { ok: true, service: "agent-x-cc", mode: "test" });
+        const cfg = x402.config();
+        return json(res, 200, {
+          ok: true,
+          service: "agent-x-cc",
+          rail: "x402-usdc",
+          network: cfg.network,
+        });
       }
 
       if (path === "/api/packs" && method === "GET") {
-        return json(res, 200, { packs: checkout.packs() });
+        const packs = x402.packs().map((p) => ({
+          ...p,
+          priceUsd: `$${(p.priceUsdCents / 100).toFixed(2)}`,
+        }));
+        return json(res, 200, { packs });
+      }
+
+      if (path === "/api/x402/config" && method === "GET") {
+        const cfg = x402.config();
+        return json(res, 200, {
+          network: cfg.network,
+          payTo: cfg.payTo || null,
+          facilitator: cfg.facilitatorUrl,
+          configured: Boolean(cfg.payTo),
+        });
       }
 
       if (path === "/api/skills" && method === "GET") {
@@ -99,8 +111,8 @@ export function createApp() {
         return json(res, 200, { count: skills.length, skills });
       }
 
-      if (path === "/api/orders" && method === "GET") {
-        return json(res, 200, { orders: checkout.orders() });
+      if (path === "/api/settlements" && method === "GET") {
+        return json(res, 200, { settlements: x402.settlements() });
       }
 
       if (path === "/api/balance" && method === "GET") {
@@ -109,24 +121,14 @@ export function createApp() {
         return json(res, 200, { account, balance: await ledger.balance(account) });
       }
 
-      if (path === "/api/checkout" && method === "POST") {
-        let parsed: any;
-        try {
-          parsed = JSON.parse((await readBody(req)) || "{}");
-        } catch {
-          return json(res, 400, { error: "invalid JSON body" });
-        }
-        const result = await checkout.checkout({
-          account: parsed.account,
-          packId: parsed.packId,
-          card: parsed.card,
-          createdAt: new Date().toISOString(),
-        });
-        if (result.ok) {
-          return json(res, 200, { ok: true, order: result.order, balance: result.balance });
-        }
-        const status = result.code === "card_declined" ? 402 : 400;
-        return json(res, status, { ok: false, code: result.code, error: result.message });
+      // x402 flow: GET (or POST) /api/x402/buy/:packId  — 402 challenge → pay → mint.
+      const buyMatch = path.match(/^\/api\/x402\/buy\/([A-Za-z0-9_-]+)$/);
+      if (buyMatch) {
+        const packId = buyMatch[1];
+        const account = (url.searchParams.get("account") || "").trim();
+        const host = req.headers.host || "localhost";
+        const resource = `http://${host}${path}`;
+        return x402.handle(req, res, packId, account, resource);
       }
 
       if (path.startsWith("/api/")) {
@@ -146,8 +148,8 @@ export function startServer(opts: ServeOptions = {}): void {
   const host = opts.host ?? process.env.HOST ?? "0.0.0.0";
   const server = createServer(createApp());
   server.listen(port, host, () => {
-    console.log(`AgentX web + test payments live → http://${host}:${port}`);
+    console.log(`AgentX web + x402 USDC payments live → http://${host}:${port}`);
     console.log(`Landing page: http://localhost:${port}/`);
-    console.log(`Test card (approved): 4242 4242 4242 4242 · (declined): 4000 0000 0000 0002`);
+    console.log(`Rail: USDC on Base over x402 · facilitator settles on-chain, server holds no key`);
   });
 }
