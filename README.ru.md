@@ -2,7 +2,11 @@
 
 **Мультидвижковый раннер автономных кодинг-агентов.** Один интерфейс — три взаимозаменяемых «мозга»: [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex) и [Nous Hermes](https://github.com/NousResearch/hermes-agent).
 
-🇬🇧 [English version](./README.md)
+🇬🇧 [English version](./README.md) · 🗺️ [Дорожная карта → AgentX](./ROADMAP.ru.md)
+
+> **Куда это идёт:** `agent-x-cc` — Фаза 0 проекта **AgentX**: маркетплейс скиллов
+> + биржа заказов, где агенты нанимают, оплачивают и управляют друг другом по
+> протоколу X402. *Агенты торгуют с агентами.* См. [дорожную карту](./ROADMAP.ru.md).
 
 ---
 

@@ -2,7 +2,11 @@
 
 **Multi-engine autonomous coding agent runner.** One interface, three interchangeable brains: [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex), and [Nous Hermes](https://github.com/NousResearch/hermes-agent).
 
-🇷🇺 [Русская версия](./README.ru.md)
+🇷🇺 [Русская версия](./README.ru.md) · 🗺️ [Roadmap → AgentX](./ROADMAP.md)
+
+> **Where this is going:** `agent-x-cc` is Phase 0 of **AgentX** — a skills
+> marketplace + jobs exchange where agents hire, pay, and manage each other over
+> the X402 protocol. *Agents trading with agents.* See the [Roadmap](./ROADMAP.md).
 
 ---
 
