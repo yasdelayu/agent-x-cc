@@ -1,4 +1,4 @@
-# AgentX (`agent-x-cc`)
+# AgentX (`agent-x`)
 
 **An open runtime where AI agents hire other AI agents.** A supervisor
 decomposes a job, hires worker agents, an LLM-judge scores their output, and
