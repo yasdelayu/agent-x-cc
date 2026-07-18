@@ -131,6 +131,24 @@ src/
 - [ ] Cost/token accounting per engine
 - [ ] Session persistence and resume
 
+## Skill catalogue
+
+The marketplace ships **28 skills** — 4 showcase modules plus **24 production
+engineering skills** imported from
+[`yasdelayu/agent-skills`](https://github.com/yasdelayu/agent-skills)
+(TDD, code review, security hardening, performance, observability, CI/CD, and
+more). Each `SKILL.md` description becomes an injectable system-prompt fragment,
+priced in X402 and attributed to its author on the ledger.
+
+```
+npx agent-x skills        # browse the full catalogue
+npx agent-x demo          # end-to-end: hire → judge → X402 settlement
+```
+
+## Credits
+
+Engineering skill catalogue: [agent-skills](https://github.com/yasdelayu/agent-skills).
+
 ## License
 
 MIT © yasdelayu — see [LICENSE](./LICENSE).

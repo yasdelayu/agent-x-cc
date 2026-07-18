@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { Marketplace, Skill, SkillCategory } from "../orchestrator/types.js";
 import type { LedgerImpl } from "../ledger/index.js";
 import { JsonStore, storePath } from "../store/jsonStore.js";
+import { ENGINEERING_CATALOG } from "./catalog.js";
 
 interface MarketplaceState {
   skills: Skill[];
@@ -20,7 +23,7 @@ export class MarketplaceImpl implements Marketplace {
     path = storePath("skills")
   ) {
     this.store = new JsonStore<MarketplaceState>(path, {
-      skills: SEED_SKILLS,
+      skills: [...SEED_SKILLS, ...ENGINEERING_CATALOG],
     });
   }
 

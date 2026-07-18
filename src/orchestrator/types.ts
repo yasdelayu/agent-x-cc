@@ -39,6 +39,12 @@ export interface Skill {
   author: string;
   /** 0..1 quality signal from evaluator history. */
   rating?: number;
+  /** Human-readable summary (from the source SKILL.md frontmatter). */
+  description?: string;
+  /** Origin of the skill definition, e.g. "skills/<slug>/SKILL.md". */
+  source?: string;
+  /** SPDX license of the underlying skill. */
+  license?: string;
 }
 
 /** A job posted to the exchange for any qualified agent to claim. */
