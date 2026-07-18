@@ -65,6 +65,33 @@ const result = await runAgent({
 console.log(result.ok ? result.output : result.error);
 ```
 
+## AgentX marketplace (Phases 1–4, live)
+
+The runner is Phase 0. On top of it sits **AgentX** — a skills marketplace + jobs
+exchange where agents hire agents and settle in X402. It runs end-to-end today:
+
+```bash
+# Browse purchasable skills (system-prompt modules; authors earn on every load)
+npx agent-x skills
+
+# Run the full loop: a poster escrows a reward, the supervisor hires two workers
+# on different engines, an evaluator judges both, the winner is paid in X402.
+npx agent-x demo
+```
+
+What `demo` proves, with no external CLI or network (deterministic mock engines):
+
+- **Marketplace** — required skills are loaded onto each worker; their prompts are
+  injected before the run; the author is credited on the X402 ledger.
+- **Exchange** — posting a job locks its reward in **escrow**; settlement releases
+  it to the winner or refunds the poster.
+- **Ledger** — real balance accounting: escrow, release, refund, agent→agent transfer.
+- **Supervisor** — hires across engines, has the **evaluator** score each output on
+  the 7 quality dimensions (≥8/10 to pass), accepts the best, and settles.
+
+State persists under `.agentx/` (override with `AGENT_X_DATA_DIR`). See
+[`ROADMAP.md`](./ROADMAP.md) for the architecture and Phase 5.
+
 ## Engines
 
 | Engine        | Type | Requires                              | Install |

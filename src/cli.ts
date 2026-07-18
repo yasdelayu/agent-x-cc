@@ -1,20 +1,26 @@
 #!/usr/bin/env node
 import { runAgent } from "./runAgent.js";
 import { engines, DEFAULT_ENGINE } from "./engines/index.js";
+import { LedgerImpl } from "./ledger/index.js";
+import { MarketplaceImpl } from "./marketplace/index.js";
+import { ExchangeImpl } from "./exchange/index.js";
+import { runDemo } from "./orchestrator/demo.js";
 
-const HELP = `agent-x — multi-engine autonomous coding agent runner
+const HELP = `agent-x — multi-engine autonomous coding agent runner + AgentX marketplace
 
 Usage:
   agent-x run   --engine <name> "<prompt>"   Run a task on one engine
   agent-x list                                Show engines and availability
+  agent-x skills [category]                   List marketplace skills
+  agent-x jobs                                List open jobs on the exchange
+  agent-x demo                                Run the full agents-hire-agents loop
   agent-x help                                Show this help
 
 Engines: ${Object.keys(engines).join(", ")}  (default: ${DEFAULT_ENGINE})
 
 Examples:
   agent-x run --engine claude-code "refactor src/ for readability"
-  agent-x run --engine codex "write unit tests for utils.ts"
-  agent-x run --engine hermes "explain this stack trace"
+  agent-x demo                                # supervisor + 2 workers + judge + X402
 `;
 
 function parseArgs(argv: string[]) {
@@ -49,6 +55,44 @@ async function main() {
     case "list":
       await listEngines();
       return;
+
+    case "skills": {
+      const marketplace = new MarketplaceImpl(new LedgerImpl());
+      const skills = await marketplace.list(rest[0] as never);
+      console.log("Skill                         Category  Price(X402)  Rating  Author");
+      console.log("----------------------------  --------  -----------  ------  ------");
+      for (const s of skills) {
+        console.log(
+          `${s.name.padEnd(28)}  ${s.category.padEnd(8)}  ${String(s.priceX402).padEnd(11)}  ${String(s.rating ?? "-").padEnd(6)}  ${s.author}`
+        );
+      }
+      return;
+    }
+
+    case "jobs": {
+      const open = await new ExchangeImpl(new LedgerImpl()).open();
+      if (!open.length) {
+        console.log("No open jobs. Post one via the exchange, or run `agent-x demo`.");
+        return;
+      }
+      for (const j of open) {
+        console.log(`[${j.id}] ${j.title} — ${j.rewardX402} X402 (${j.category})`);
+      }
+      return;
+    }
+
+    case "demo": {
+      const { job, result, balances } = await runDemo();
+      console.log("");
+      console.log("── Settlement ─────────────────────────────");
+      console.log(`Job:          ${job.title}`);
+      console.log(`Winner:       ${result.workerId}`);
+      console.log(`Score:        ${result.score} (accepted: ${result.accepted})`);
+      console.log(`Net to worker:${result.settledX402} X402 (reward − skill costs)`);
+      console.log(`Poster left:  ${balances.poster} X402`);
+      console.log(`Winner total: ${balances.winner} X402`);
+      return;
+    }
 
     case "run": {
       const { engine, prompt } = parseArgs(rest);

@@ -44,10 +44,10 @@ for all of this already live in [`src/orchestrator/types.ts`](./src/orchestrator
 | Phase | Name | Status | Ships |
 |------|------|--------|-------|
 | **0** | Multi-engine runner | ✅ done | `runAgent(engine, task)` over Claude Code / Codex / Hermes |
-| **1** | Skill registry | 🔨 next | `Marketplace`: publish / list / load Skills; prompt+tool injection |
-| **2** | Jobs exchange | ⏳ | `Exchange`: post / open / claim / settle Jobs |
-| **3** | X402 ledger | ⏳ | `Ledger`: balances, escrow, release/refund, agent→agent transfer |
-| **4** | Orchestrator | ⏳ | Supervisor loop: decompose → hire → evaluate → settle |
+| **1** | Skill registry | ✅ done | `Marketplace`: publish / list / load Skills; prompt+tool injection |
+| **2** | Jobs exchange | ✅ done | `Exchange`: post / open / claim / settle Jobs |
+| **3** | X402 ledger | ✅ done | `Ledger`: balances, escrow, release/refund, agent→agent transfer |
+| **4** | Orchestrator | ✅ done | Supervisor loop: decompose → hire → evaluate → settle |
 | **5** | Autonomy & reputation | ⏳ | 24/7 daemon, staking, ratings, royalties to skill authors |
 
 ### Phase 1 — Skill registry
@@ -85,5 +85,6 @@ without you in the chain.
 - **Escrow-first.** No work runs without locked funds; no funds move without a verdict.
 - **Quality-gated.** The evaluator is not optional — it's how the market stays honest.
 
-> Status: Phase 0 shipped. Phase 1 (Skill registry) is in progress. Contracts are
-> frozen in `src/orchestrator/`; implementations land phase by phase.
+> Status: Phases 0–4 shipped (v0.2). The Marketplace, Exchange, X402 Ledger, and
+> Supervisor loop are live behind the frozen `src/orchestrator/` contracts and run
+> end-to-end via `agent-x demo`. Next up: Phase 5 — autonomy, staking & reputation.

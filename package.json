@@ -1,6 +1,6 @@
 {
   "name": "agent-x-cc",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-engine autonomous coding agent runner — swap between Claude Code, OpenAI Codex, and Nous Hermes behind one interface.",
   "type": "module",
   "bin": {
