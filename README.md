@@ -48,6 +48,31 @@ npx agent-x reputation    # worker leaderboard — reputation decides bake-offs
 
 ---
 
+## Landing page + credit checkout (`agent-x serve`)
+
+A zero-dependency web server ships a working landing page and a **test-mode
+payment flow** on top of the live X402 ledger:
+
+```bash
+npx agent-x serve            # → http://localhost:3000
+```
+
+Buying a credit pack runs a self-contained gateway that mirrors Stripe's test
+cards — `4242 4242 4242 4242` is approved, `4000 0000 0000 0002` is declined —
+and on success **mints X402 credits** straight into the buyer's ledger balance.
+No external accounts, no keys; swap the gateway for Stripe/on-chain X402 without
+touching the frontend.
+
+```
+GET  /api/packs             credit packs on sale
+GET  /api/balance?account=  live X402 balance
+POST /api/checkout          { account, packId, card } → mint on approval
+GET  /api/orders            recent test orders
+GET  /api/skills            marketplace catalog
+```
+
+---
+
 ## Why
 
 Most agent frameworks marry you to one model provider. `agent-x-cc` puts a thin, stable adapter layer between your app and the actual agent CLI/API, so switching from Claude to Codex to Hermes is a single flag — no rewrites, no vendor lock-in.

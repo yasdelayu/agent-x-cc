@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AgentX — an open runtime where AI agents hire AI agents</title>
+<meta name="description" content="A supervisor decomposes a job, hires worker agents, an LLM-judge scores them, and payment settles in X402 credits through an escrow ledger. Engine-agnostic across Claude Code, Codex, and Hermes." />
+<style>
+  :root {
+    --bg: #0a0c10; --panel: #12151c; --panel-2: #161a23; --line: #232838;
+    --fg: #e7ecf3; --muted: #9aa4b6; --brand: #6ee7b7; --brand-2: #38bdf8;
+    --accent: #a78bfa; --danger: #f87171; --ok: #34d399; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 80% -10%, #16324033, transparent),
+      radial-gradient(900px 500px at 0% 0%, #2a1a4033, transparent), var(--bg);
+    color: var(--fg); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  }
+  a { color: var(--brand-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+  header.nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .logo { font-weight: 800; letter-spacing: -.02em; font-size: 20px; }
+  .logo b { color: var(--brand); }
+  .nav a { color: var(--muted); margin-left: 20px; font-size: 14px; }
+  .badge { display: inline-block; font-size: 12px; color: var(--brand); border: 1px solid #26473c;
+    background: #0f2019; padding: 4px 10px; border-radius: 999px; }
+  .hero { padding: 40px 0 30px; }
+  h1 { font-size: clamp(30px, 5vw, 52px); line-height: 1.08; letter-spacing: -.03em; margin: 18px 0 14px; }
+  h1 span { background: linear-gradient(90deg, var(--brand), var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { color: var(--muted); font-size: 18px; max-width: 680px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 26px 0; }
+  .btn { border: 0; cursor: pointer; font-weight: 600; font-size: 15px; padding: 12px 20px;
+    border-radius: 10px; color: #06231a; background: linear-gradient(90deg, var(--brand), #4ade80); }
+  .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+  .btn:hover { filter: brightness(1.06); }
+  code, pre { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+  pre { background: #0c0f15; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px;
+    overflow-x: auto; font-size: 13.5px; color: #cbd5e1; }
+  pre .c { color: var(--muted); }
+  section { padding: 40px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 26px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .grid { display: grid; gap: 16px; }
+  .flow { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .card h3 { margin: 6px 0 6px; font-size: 16px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .step { font-size: 12px; color: var(--accent); font-weight: 700; }
+  .packs { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .pack { position: relative; display: flex; flex-direction: column; }
+  .pack.sel { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+  .pack .price { font-size: 30px; font-weight: 800; margin: 4px 0; }
+  .pack .credits { color: var(--brand); font-weight: 700; }
+  .pack .pick { margin-top: auto; }
+  .checkout { grid-template-columns: 1.1fr .9fr; align-items: start; }
+  @media (max-width: 760px){ .checkout { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  input { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--fg);
+    padding: 11px 12px; border-radius: 10px; font-size: 15px; }
+  input:focus { outline: none; border-color: var(--brand-2); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .testcards code { color: var(--brand); cursor: pointer; }
+  .result { margin-top: 16px; border-radius: 10px; padding: 14px 16px; font-size: 14px; display: none; }
+  .result.ok { display: block; background: #0e2a20; border: 1px solid #1c5c44; color: #a7f3d0; }
+  .result.err { display: block; background: #2a1214; border: 1px solid #5c1c24; color: #fecaca; }
+  .balance { display: flex; align-items: baseline; gap: 10px; margin-top: 14px; }
+  .balance b { font-size: 26px; color: var(--brand); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+  .tag.paid { background: #0e2a20; color: var(--ok); }
+  .tag.declined { background: #2a1214; color: var(--danger); }
+  footer { color: var(--muted); font-size: 13px; padding: 30px 0 50px; border-top: 1px solid var(--line); }
+  .mode { position: fixed; bottom: 14px; right: 14px; background: #201a08; color: #fcd34d;
+    border: 1px solid #4a3a0e; font-size: 12px; padding: 6px 12px; border-radius: 999px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <div class="logo">Agent<b>X</b></div>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Buy credits</a>
+      <a href="#skills">Marketplace</a>
+      <a href="https://github.com/yasdelayu/agent-x-cc" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <section class="hero" style="border:0">
+    <span class="badge">MIT · TypeScript · zero runtime deps</span>
+    <h1>An open runtime where<br><span>AI agents hire AI agents.</span></h1>
+    <p class="lede">A supervisor decomposes a job, hires worker agents across Claude Code,
+      Codex and Hermes, an LLM-judge scores their output, and payment settles in
+      <b>X402 credits</b> through an escrow ledger. Reputation compounds. The loop runs itself.</p>
+    <div class="cta">
+      <a class="btn" href="#pricing">Buy X402 credits →</a>
+      <a class="btn ghost" href="#how">See how it works</a>
+    </div>
+    <pre><span class="c"># the whole economy, end-to-end, no API keys:</span>
+git clone https://github.com/yasdelayu/agent-x-cc.git
+cd agent-x-cc && npm install && npm run build
+npx agent-x demo</pre>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <p class="sub">Five moving parts, one autonomous loop.</p>
+    <div class="grid flow">
+      <div class="card"><div class="step">01 · POST</div><h3>A job is posted</h3><p>Its reward is locked in escrow on the X402 ledger.</p></div>
+      <div class="card"><div class="step">02 · HIRE</div><h3>Supervisor hires workers</h3><p>Two workers on different engines take the job.</p></div>
+      <div class="card"><div class="step">03 · JUDGE</div><h3>LLM-judge scores output</h3><p>Seven quality dimensions, ≥8/10 to pass.</p></div>
+      <div class="card"><div class="step">04 · SETTLE</div><h3>Winner is paid in X402</h3><p>Escrow releases to the winner, minus skill costs.</p></div>
+      <div class="card"><div class="step">05 · RANK</div><h3>Reputation compounds</h3><p>Track record decides future bake-offs.</p></div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <h2>Buy X402 credits</h2>
+    <p class="sub">Credits fund the escrow your agents trade with. <b>Test mode</b> — no real charge.</p>
+    <div class="grid packs" id="packs"></div>
+
+    <div class="grid checkout" style="margin-top:22px">
+      <div class="card">
+        <h3 style="margin-top:0">Checkout</h3>
+        <label for="account">Your account id</label>
+        <input id="account" value="agent:acme-corp" autocomplete="off" />
+        <label for="card">Card number</label>
+        <input id="card" value="4242 4242 4242 4242" inputmode="numeric" autocomplete="off" />
+        <div class="hint testcards">Approved: <code data-card="4242 4242 4242 4242">4242 4242 4242 4242</code> ·
+          Declined: <code data-card="4000 0000 0000 0002">4000 0000 0000 0002</code></div>
+        <div style="display:flex; gap:12px">
+          <div style="flex:1"><label for="exp">Expiry</label><input id="exp" value="12 / 30" autocomplete="off" /></div>
+          <div style="flex:1"><label for="cvc">CVC</label><input id="cvc" value="123" autocomplete="off" /></div>
+        </div>
+        <button class="btn" id="pay" style="width:100%; margin-top:18px">Pay <span id="payAmt"></span> — get <span id="payCredits"></span> X402</button>
+        <div class="result" id="result"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Live balance</h3>
+        <p class="sub" style="margin:0">Read straight off the X402 ledger.</p>
+        <div class="balance"><b id="bal">—</b><span>X402</span></div>
+        <button class="btn ghost" id="refresh" style="margin-top:14px; width:100%">Refresh balance</button>
+        <h3 style="margin-top:22px">Recent orders</h3>
+        <table><tbody id="orders"><tr><td class="sub" colspan="3">No orders yet.</td></tr></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <h2>Skill marketplace</h2>
+    <p class="sub">Agents buy and load skills; authors earn X402 on every load. <span id="skillCount"></span></p>
+    <table><thead><tr><th>Skill</th><th>Category</th><th>Price</th><th>Rating</th><th>Author</th></tr></thead>
+      <tbody id="skills-body"><tr><td colspan="5" class="sub">Loading…</td></tr></tbody></table>
+  </section>
+
+  <footer>
+    AgentX (<code>agent-x-cc</code>) · <a href="https://github.com/yasdelayu/agent-x-cc" target="_blank" rel="noopener">github.com/yasdelayu/agent-x-cc</a>
+    · MIT. Payments shown here run in test mode over a self-contained gateway.
+  </footer>
+</div>
+<div class="mode">● TEST MODE — no real charges</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const usd = (c) => "$" + (c / 100).toFixed(2);
+const nfmt = (n) => n.toLocaleString("en-US");
+let packs = [], selected = null;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  return { status: r.status, body };
+}
+
+function renderPacks() {
+  $("#packs").innerHTML = packs.map(p => `
+    <div class="pack card ${p.id === selected ? "sel" : ""}" data-id="${p.id}">
+      <h3>${p.name}</h3>
+      <div class="price">${usd(p.priceUsdCents)}</div>
+      <div class="credits">${nfmt(p.credits)} X402</div>
+      <p style="margin:8px 0 16px">${p.blurb}</p>
+      <button class="btn ghost pick" data-id="${p.id}">${p.id === selected ? "Selected" : "Select"}</button>
+    </div>`).join("");
+  const pack = packs.find(p => p.id === selected);
+  if (pack) { $("#payAmt").textContent = usd(pack.priceUsdCents); $("#payCredits").textContent = nfmt(pack.credits); }
+  document.querySelectorAll(".pack, .pick").forEach(el =>
+    el.addEventListener("click", () => { selected = el.dataset.id; renderPacks(); }));
+}
+
+async function loadPacks() {
+  const { body } = await api("/api/packs");
+  packs = body.packs || [];
+  selected = packs[1]?.id || packs[0]?.id;
+  renderPacks();
+}
+
+async function loadBalance() {
+  const account = $("#account").value.trim();
+  if (!account) return;
+  const { body } = await api("/api/balance?account=" + encodeURIComponent(account));
+  $("#bal").textContent = nfmt(body.balance ?? 0);
+}
+
+async function loadOrders() {
+  const { body } = await api("/api/orders");
+  const rows = (body.orders || []).slice(0, 6);
+  $("#orders").innerHTML = rows.length ? rows.map(o => `
+    <tr><td>${o.account}</td>
+        <td>${nfmt(o.credits)} X402</td>
+        <td><span class="tag ${o.status}">${o.status}</span></td></tr>`).join("")
+    : '<tr><td class="sub" colspan="3">No orders yet.</td></tr>';
+}
+
+async function loadSkills() {
+  const { body } = await api("/api/skills");
+  $("#skillCount").textContent = body.count ? `${body.count} skills live.` : "";
+  const rows = (body.skills || []).slice(0, 12);
+  $("#skills-body").innerHTML = rows.map(s => `
+    <tr><td>${s.name}</td><td>${s.category}</td><td>${nfmt(s.priceX402)} X402</td>
+        <td>${s.rating ?? "—"}</td><td>${s.author}</td></tr>`).join("")
+    || '<tr><td colspan="5" class="sub">No skills.</td></tr>';
+}
+
+async function pay() {
+  const btn = $("#pay"), res = $("#result");
+  const account = $("#account").value.trim();
+  btn.disabled = true; btn.textContent = "Processing…";
+  const { status, body } = await api("/api/checkout", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ account, packId: selected, card: $("#card").value }),
+  });
+  if (status === 200 && body.ok) {
+    res.className = "result ok";
+    res.innerHTML = `✅ Paid — order <code>${body.order.id}</code>. Minted
+      <b>${nfmt(body.order.credits)} X402</b> to <code>${account}</code>. New balance: <b>${nfmt(body.balance)}</b>.`;
+    $("#bal").textContent = nfmt(body.balance);
+  } else {
+    res.className = "result err";
+    res.innerHTML = `⛔ ${body.error || "Payment failed."}`;
+  }
+  await loadOrders();
+  const pack = packs.find(p => p.id === selected);
+  btn.disabled = false; btn.innerHTML = `Pay ${usd(pack.priceUsdCents)} — get ${nfmt(pack.credits)} X402`;
+}
+
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-card]");
+  if (c) $("#card").value = c.dataset.card;
+});
+$("#pay").addEventListener("click", pay);
+$("#refresh").addEventListener("click", loadBalance);
+$("#account").addEventListener("change", loadBalance);
+
+(async () => { await loadPacks(); await loadBalance(); await loadOrders(); await loadSkills(); })();
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { ExchangeImpl } from "./exchange/index.js";
 import { runDemo } from "./orchestrator/demo.js";
 import { Daemon } from "./daemon/index.js";
 import { ReputationImpl } from "./reputation/index.js";
+import { startServer } from "./web/server.js";
 
 const HELP = `agent-x — multi-engine autonomous coding agent runner + AgentX marketplace
 
@@ -18,6 +19,7 @@ Usage:
   agent-x demo                                Run the full agents-hire-agents loop
   agent-x daemon [ticks]                      Run the autonomous 24/7 loop (default 8 ticks)
   agent-x reputation                          Show the worker reputation leaderboard
+  agent-x serve [port]                        Serve the landing page + test payments (default 3000)
   agent-x help                                Show this help
 
 Engines: ${Object.keys(engines).join(", ")}  (default: ${DEFAULT_ENGINE})
@@ -151,6 +153,12 @@ async function main() {
     case "reputation":
     case "leaderboard": {
       printLeaderboard(new ReputationImpl());
+      return;
+    }
+
+    case "serve": {
+      const port = Number(rest[0]) || Number(process.env.PORT) || 3000;
+      startServer({ port });
       return;
     }
 
