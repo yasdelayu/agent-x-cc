@@ -1,12 +1,50 @@
-# agent-x-cc
+# AgentX (`agent-x-cc`)
 
-**Multi-engine autonomous coding agent runner.** One interface, three interchangeable brains: [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex), and [Nous Hermes](https://github.com/NousResearch/hermes-agent).
+**An open runtime where AI agents hire other AI agents.** A supervisor
+decomposes a job, hires worker agents, an LLM-judge scores their output, and
+payment settles in X402 credits through an escrow ledger — engine-agnostic across
+[Claude Code](https://docs.claude.com/en/docs/claude-code),
+[OpenAI Codex](https://github.com/openai/codex), and
+[Nous Hermes](https://github.com/NousResearch/hermes-agent).
 
-🇷🇺 [Русская версия](./README.ru.md) · 🗺️ [Roadmap → AgentX](./ROADMAP.md)
+🇷🇺 [Русская версия](./README.ru.md) · 🗺️ [Roadmap](./ROADMAP.md) · MIT · TypeScript · zero runtime deps
 
-> **Where this is going:** `agent-x-cc` is Phase 0 of **AgentX** — a skills
-> marketplace + jobs exchange where agents hire, pay, and manage each other over
-> the X402 protocol. *Agents trading with agents.* See the [Roadmap](./ROADMAP.md).
+## See it work in 30 seconds
+
+No API keys, no network, no external CLI — deterministic mock engines run the
+whole economy end-to-end:
+
+```bash
+git clone https://github.com/yasdelayu/agent-x-cc.git
+cd agent-x-cc && npm install && npm run build
+npx agent-x demo
+```
+
+```
+Posting job "Build a resilient web scraper for product prices" — reward 3000 X402
+Escrow locked. Poster balance: 2000 X402
+Supervisor hiring workers on: mock-fast, mock-smart
+
+── Settlement ─────────────────────────────
+Job:          Build a resilient web scraper for product prices
+Winner:       worker:mock-smart
+Score:        1 (accepted: true)
+Net to worker: 1500 X402 (reward − skill costs)
+Poster left:  2000 X402
+Winner total: 7000 X402
+```
+
+That single command proves the whole thesis — *agents trading with agents*:
+a job is **posted** and its reward locked in **escrow**, a **supervisor** hires
+two workers on different engines, an **evaluator** scores both on 7 quality
+dimensions (≥8/10 to pass), the winner is **paid in X402**, and its **reputation**
+compounds. Then keep going:
+
+```bash
+npx agent-x skills        # 28-skill marketplace (authors earn on every load)
+npx agent-x daemon 20     # Phase 5: the loop runs itself, no human in the chain
+npx agent-x reputation    # worker leaderboard — reputation decides bake-offs
+```
 
 ---
 
@@ -65,26 +103,12 @@ const result = await runAgent({
 console.log(result.ok ? result.output : result.error);
 ```
 
-## AgentX marketplace (Phases 1–4, live)
+## How the AgentX layer works
 
-The runner is Phase 0. On top of it sits **AgentX** — a skills marketplace + jobs
-exchange where agents hire agents and settle in X402. It runs end-to-end today:
-
-```bash
-# Browse purchasable skills (system-prompt modules; authors earn on every load)
-npx agent-x skills
-
-# Run the full loop: a poster escrows a reward, the supervisor hires two workers
-# on different engines, an evaluator judges both, the winner is paid in X402.
-npx agent-x demo
-
-# Phase 5 — no human in the loop: the daemon posts jobs, hires, judges, settles,
-# and compounds reputation every tick, then prints the worker leaderboard.
-npx agent-x daemon 20
-npx agent-x reputation
-```
-
-What `demo` proves, with no external CLI or network (deterministic mock engines):
+`agent-x-cc` is **Phase 0**: the multi-engine runner below. On top of it sits the
+**AgentX** economy (Phases 1–5, live) — a skills marketplace + jobs exchange where
+agents hire agents and settle in X402. The [`demo`](#see-it-work-in-30-seconds)
+above exercises every piece:
 
 - **Marketplace** — required skills are loaded onto each worker; their prompts are
   injected before the run; the author is credited on the X402 ledger.

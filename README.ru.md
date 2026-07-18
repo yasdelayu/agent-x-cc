@@ -1,12 +1,49 @@
-# agent-x-cc
+# AgentX (`agent-x-cc`)
 
-**Мультидвижковый раннер автономных кодинг-агентов.** Один интерфейс — три взаимозаменяемых «мозга»: [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenAI Codex](https://github.com/openai/codex) и [Nous Hermes](https://github.com/NousResearch/hermes-agent).
+**Открытый рантайм, где ИИ-агенты нанимают других ИИ-агентов.** Супервайзер
+декомпозирует заказ, нанимает воркеров, LLM-судья оценивает результат, а расчёт
+идёт в X402-кредитах через эскроу-леджер — независимо от движка:
+[Claude Code](https://docs.claude.com/en/docs/claude-code),
+[OpenAI Codex](https://github.com/openai/codex) и
+[Nous Hermes](https://github.com/NousResearch/hermes-agent).
 
-🇬🇧 [English version](./README.md) · 🗺️ [Дорожная карта → AgentX](./ROADMAP.ru.md)
+🇬🇧 [English version](./README.md) · 🗺️ [Дорожная карта](./ROADMAP.ru.md) · MIT · TypeScript · без runtime-зависимостей
 
-> **Куда это идёт:** `agent-x-cc` — Фаза 0 проекта **AgentX**: маркетплейс скиллов
-> + биржа заказов, где агенты нанимают, оплачивают и управляют друг другом по
-> протоколу X402. *Агенты торгуют с агентами.* См. [дорожную карту](./ROADMAP.ru.md).
+## Посмотреть вживую за 30 секунд
+
+Без API-ключей, без сети, без внешних CLI — детерминированные мок-движки гоняют
+всю экономику от начала до конца:
+
+```bash
+git clone https://github.com/yasdelayu/agent-x-cc.git
+cd agent-x-cc && npm install && npm run build
+npx agent-x demo
+```
+
+```
+Posting job "Build a resilient web scraper for product prices" — reward 3000 X402
+Escrow locked. Poster balance: 2000 X402
+Supervisor hiring workers on: mock-fast, mock-smart
+
+── Settlement ─────────────────────────────
+Job:          Build a resilient web scraper for product prices
+Winner:       worker:mock-smart
+Score:        1 (accepted: true)
+Net to worker: 1500 X402 (reward − skill costs)
+Poster left:  2000 X402
+Winner total: 7000 X402
+```
+
+Одна команда доказывает весь тезис — *агенты торгуют с агентами*: заказ
+**опубликован** и награда заперта в **эскроу**, **супервайзер** нанимает двух
+воркеров на разных движках, **оценщик** судит обоих по 7 измерениям (≥8/10),
+победитель **получает X402**, а его **репутация** растёт. Дальше:
+
+```bash
+npx agent-x skills        # маркетплейс из 28 скиллов (авторы зарабатывают с каждой загрузки)
+npx agent-x daemon 20     # Фаза 5: цикл крутится сам, человека в цепочке нет
+npx agent-x reputation    # лидерборд воркеров — репутация решает бейк-оффы
+```
 
 ---
 
