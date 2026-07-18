@@ -5,6 +5,8 @@ import { LedgerImpl } from "./ledger/index.js";
 import { MarketplaceImpl } from "./marketplace/index.js";
 import { ExchangeImpl } from "./exchange/index.js";
 import { runDemo } from "./orchestrator/demo.js";
+import { Daemon } from "./daemon/index.js";
+import { ReputationImpl } from "./reputation/index.js";
 
 const HELP = `agent-x — multi-engine autonomous coding agent runner + AgentX marketplace
 
@@ -14,6 +16,8 @@ Usage:
   agent-x skills [category]                   List marketplace skills
   agent-x jobs                                List open jobs on the exchange
   agent-x demo                                Run the full agents-hire-agents loop
+  agent-x daemon [ticks]                      Run the autonomous 24/7 loop (default 8 ticks)
+  agent-x reputation                          Show the worker reputation leaderboard
   agent-x help                                Show this help
 
 Engines: ${Object.keys(engines).join(", ")}  (default: ${DEFAULT_ENGINE})
@@ -21,6 +25,7 @@ Engines: ${Object.keys(engines).join(", ")}  (default: ${DEFAULT_ENGINE})
 Examples:
   agent-x run --engine claude-code "refactor src/ for readability"
   agent-x demo                                # supervisor + 2 workers + judge + X402
+  agent-x daemon 20                           # 20 unattended job cycles, then leaderboard
 `;
 
 function parseArgs(argv: string[]) {
@@ -46,6 +51,26 @@ async function listEngines() {
       `${name.padEnd(14)}  ${(ok ? "yes" : "no").padEnd(9)}  ${engine.description}`
     );
   }
+}
+
+function pad(n: number, width: number): string {
+  return String(n).padEnd(width);
+}
+
+function printLeaderboard(reputation: ReputationImpl) {
+  const board = reputation.leaderboard();
+  console.log("\n── Reputation leaderboard ─────────────────────────────────────");
+  if (!board.length) {
+    console.log("No history yet. Run `agent-x daemon` to let workers earn a track record.");
+    return;
+  }
+  console.log("Rank  Worker             Rep    Jobs  Wins  WinRate  AvgScore  Net(X402)");
+  console.log("----  -----------------  -----  ----  ----  -------  --------  ---------");
+  board.forEach((r, i) => {
+    console.log(
+      `${pad(i + 1, 4)}  ${r.agentId.padEnd(17)}  ${String(r.score).padEnd(5)}  ${pad(r.jobs, 4)}  ${pad(r.wins, 4)}  ${String(r.winRate).padEnd(7)}  ${String(r.avgScore).padEnd(8)}  ${r.netX402}`
+    );
+  });
 }
 
 async function main() {
@@ -91,6 +116,41 @@ async function main() {
       console.log(`Net to worker:${result.settledX402} X402 (reward − skill costs)`);
       console.log(`Poster left:  ${balances.poster} X402`);
       console.log(`Winner total: ${balances.winner} X402`);
+      return;
+    }
+
+    case "daemon": {
+      const ticks = Math.max(1, Number(rest[0]) || 8);
+      const daemon = new Daemon({
+        workerEngines: ["mock-fast", "mock-smart"],
+        poster: "agent:acme-corp",
+        seedBalances: {
+          "agent:acme-corp": 40000,
+          "worker:mock-fast": 5000,
+          "worker:mock-smart": 5000,
+        },
+      });
+
+      console.log(`Autonomous daemon starting — ${ticks} ticks, no human in the loop.\n`);
+      console.log("Tick  Job                                      Winner             Score  Net(X402)");
+      console.log("----  ---------------------------------------  -----------------  -----  ---------");
+      await daemon.run(ticks, (r) => {
+        if (r.skipped) {
+          console.log(`${pad(r.tick, 4)}  ${r.job.title.slice(0, 39).padEnd(39)}  (skipped — treasury dry)`);
+          return;
+        }
+        console.log(
+          `${pad(r.tick, 4)}  ${r.job.title.slice(0, 39).padEnd(39)}  ${r.result.workerId.padEnd(17)}  ${String(r.result.score ?? "-").padEnd(5)}  ${r.result.settledX402}`
+        );
+      });
+
+      printLeaderboard(daemon.reputation);
+      return;
+    }
+
+    case "reputation":
+    case "leaderboard": {
+      printLeaderboard(new ReputationImpl());
       return;
     }
 

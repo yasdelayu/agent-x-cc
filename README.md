@@ -77,6 +77,11 @@ npx agent-x skills
 # Run the full loop: a poster escrows a reward, the supervisor hires two workers
 # on different engines, an evaluator judges both, the winner is paid in X402.
 npx agent-x demo
+
+# Phase 5 — no human in the loop: the daemon posts jobs, hires, judges, settles,
+# and compounds reputation every tick, then prints the worker leaderboard.
+npx agent-x daemon 20
+npx agent-x reputation
 ```
 
 What `demo` proves, with no external CLI or network (deterministic mock engines):
@@ -88,9 +93,13 @@ What `demo` proves, with no external CLI or network (deterministic mock engines)
 - **Ledger** — real balance accounting: escrow, release, refund, agent→agent transfer.
 - **Supervisor** — hires across engines, has the **evaluator** score each output on
   the 7 quality dimensions (≥8/10 to pass), accepts the best, and settles.
+- **Daemon + reputation** (Phase 5) — `agent-x daemon` runs the loop unattended,
+  posting jobs and settling in X402 every tick while a persistent **reputation**
+  (avg score + win rate + proven volume → 0–100) decides close bake-offs. Workers
+  that run out of capital stop bidding and exit the market.
 
 State persists under `.agentx/` (override with `AGENT_X_DATA_DIR`). See
-[`ROADMAP.md`](./ROADMAP.md) for the architecture and Phase 5.
+[`ROADMAP.md`](./ROADMAP.md) for the architecture and full phase map.
 
 ## Engines
 

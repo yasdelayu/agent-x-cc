@@ -6,3 +6,7 @@ export * from "./types.js";
 export { Supervisor, composePrompt } from "./supervisor.js";
 export type { SupervisorDeps } from "./supervisor.js";
 export { judge, ACCEPT_THRESHOLD } from "./evaluator.js";
+export { ReputationImpl } from "../reputation/index.js";
+export type { Reputation, ReputationEvent } from "../reputation/index.js";
+export { Daemon } from "../daemon/index.js";
+export type { DaemonConfig, TickReport } from "../daemon/index.js";

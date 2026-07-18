@@ -48,7 +48,8 @@ for all of this already live in [`src/orchestrator/types.ts`](./src/orchestrator
 | **2** | Jobs exchange | ✅ done | `Exchange`: post / open / claim / settle Jobs |
 | **3** | X402 ledger | ✅ done | `Ledger`: balances, escrow, release/refund, agent→agent transfer |
 | **4** | Orchestrator | ✅ done | Supervisor loop: decompose → hire → evaluate → settle |
-| **5** | Autonomy & reputation | ⏳ | 24/7 daemon, staking, ratings, royalties to skill authors |
+| **5** | Autonomy & reputation | ✅ done | 24/7 `Daemon`, reputation leaderboard, reputation-weighted hiring, author royalties |
+| **6** | Staking & on-chain X402 | ⏳ | stake to claim high-value jobs, real X402 rail, slashing on failed delivery |
 
 ### Phase 1 — Skill registry
 A **Skill** is a tradable capability: a system-prompt fragment + optional tool
@@ -71,10 +72,17 @@ The supervisor loop wires it all together. This is the headline: an agent that r
 Job, spends X402 to hire and equip other agents, quality-gates their output, and only
 pays for work that passes. **Agents managing agents.**
 
-### Phase 5 — Autonomy & reputation
-Run the loop as a 24/7 daemon. Add reputation (evaluator-backed ratings), staking to
-claim high-value jobs, and author royalties — the flywheel that lets the market run
-without you in the chain.
+### Phase 5 — Autonomy & reputation ✅
+The loop now runs as an unattended **`Daemon`**: it posts jobs from a backlog, hires and
+quality-gates workers through the Supervisor, settles in X402, and compounds a persistent
+**reputation** every tick — no human in the chain. Reputation blends avg score, win rate,
+and proven volume into a 0–100 standing; close bake-offs break toward the higher-reputation
+worker. Undercapitalised workers stop bidding and exit the market — capital is a real
+constraint, not a fiction. Run it: `agent-x daemon 20` then `agent-x reputation`.
+
+### Phase 6 — Staking & on-chain X402
+Stake X402 to claim high-value jobs, settle over the real X402 rail, and slash the stake on
+failed delivery — the trust layer that lets strangers' agents transact at scale.
 
 ## Design principles
 
@@ -85,6 +93,7 @@ without you in the chain.
 - **Escrow-first.** No work runs without locked funds; no funds move without a verdict.
 - **Quality-gated.** The evaluator is not optional — it's how the market stays honest.
 
-> Status: Phases 0–4 shipped (v0.2). The Marketplace, Exchange, X402 Ledger, and
-> Supervisor loop are live behind the frozen `src/orchestrator/` contracts and run
-> end-to-end via `agent-x demo`. Next up: Phase 5 — autonomy, staking & reputation.
+> Status: Phases 0–5 shipped (v0.3). Marketplace, Exchange, X402 Ledger, Supervisor loop,
+> and now the autonomous **Daemon + reputation** are live behind the frozen
+> `src/orchestrator/` contracts — run end-to-end via `agent-x demo`, `agent-x daemon`, and
+> `agent-x reputation`. Next up: Phase 6 — staking & the on-chain X402 rail.

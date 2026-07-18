@@ -2,6 +2,7 @@ import type { Job, JobResult, Orchestrator, Skill } from "./types.js";
 import { runAgent } from "../runAgent.js";
 import { MarketplaceImpl } from "../marketplace/index.js";
 import { ExchangeImpl } from "../exchange/index.js";
+import { ReputationImpl } from "../reputation/index.js";
 import { ACCEPT_THRESHOLD, judge } from "./evaluator.js";
 
 export interface SupervisorDeps {
@@ -9,6 +10,8 @@ export interface SupervisorDeps {
   exchange: ExchangeImpl;
   /** Worker engines that compete for each job. Best-scoring result wins. */
   workerEngines: string[];
+  /** Optional reputation ledger — records every judged attempt when present. */
+  reputation?: ReputationImpl;
 }
 
 /**
@@ -58,21 +61,64 @@ export class Supervisor implements Orchestrator {
     return { ...result, score, accepted: score >= ACCEPT_THRESHOLD };
   }
 
-  /** decompose → hire across engines → judge → accept best → settle in X402. */
-  async run(job: Job): Promise<JobResult> {
-    const candidates = await Promise.all(
+  /**
+   * decompose → hire across engines → judge → accept best → settle in X402,
+   * then record every attempt to the reputation ledger. Ties break toward the
+   * worker with the stronger standing, so proven agents win close calls — the
+   * flywheel that lets the autonomous daemon build a real hiring market.
+   */
+  async run(job: Job, tick = 0): Promise<JobResult> {
+    // A worker that can't fund the job's required skills simply doesn't bid —
+    // capital is a real constraint, so an undercapitalised worker exits the
+    // market instead of crashing the loop. Only actual bids compete.
+    const bids = await Promise.all(
       this.deps.workerEngines.map((engine) =>
-        this.hire(job, `worker:${engine}`, engine).then((r) =>
-          this.evaluate(r)
-        )
+        this.hire(job, `worker:${engine}`, engine)
+          .then((r) => this.evaluate(r))
+          .catch(() => null)
       )
     );
+    const candidates = bids.filter((c): c is JobResult => c !== null);
 
-    const best = candidates.reduce((a, b) =>
-      (b.score ?? 0) > (a.score ?? 0) ? b : a
-    );
+    // Nobody could afford to bid — refund the poster and mark the job failed.
+    if (candidates.length === 0) {
+      return this.deps.exchange.settle({
+        jobId: job.id,
+        workerId: "-",
+        agentResult: { ok: false, engine: "-", output: "", durationMs: 0, error: "no bidders" },
+        accepted: false,
+        settledX402: 0,
+      });
+    }
 
-    return this.deps.exchange.settle(best);
+    const rep = this.deps.reputation;
+    const best = candidates.reduce((a, b) => {
+      const da = a.score ?? 0;
+      const db = b.score ?? 0;
+      if (db !== da) return db > da ? b : a;
+      // Equal quality → the higher-reputation worker earns the job.
+      const ra = rep?.standing(a.workerId).score ?? 0;
+      const rb = rep?.standing(b.workerId).score ?? 0;
+      return rb > ra ? b : a;
+    });
+
+    const settled = await this.deps.exchange.settle(best);
+
+    if (rep) {
+      for (const c of candidates) {
+        const isWinner = c.workerId === settled.workerId;
+        rep.record({
+          agentId: c.workerId,
+          jobId: job.id,
+          score: c.score ?? 0,
+          accepted: isWinner && settled.accepted,
+          earnedX402: isWinner ? settled.settledX402 : c.settledX402,
+          tick,
+        });
+      }
+    }
+
+    return settled;
   }
 }
 
