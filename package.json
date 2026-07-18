@@ -1,0 +1,30 @@
+{
+  "name": "agent-x-cc",
+  "version": "0.1.0",
+  "description": "Multi-engine autonomous coding agent runner — swap between Claude Code, OpenAI Codex, and Nous Hermes behind one interface.",
+  "type": "module",
+  "bin": {
+    "agent-x": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai-agent",
+    "claude-code",
+    "codex",
+    "hermes",
+    "autonomous-agent",
+    "llm"
+  ],
+  "license": "MIT",
+  "author": "yasdelayu",
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
